@@ -145,11 +145,20 @@ factcheck_task = Task(
         "If incorrect, mark as 'False' and provide the corrected fact. "
         "If unclear due to lack of evidence, mark as 'Unclear'."
     ),
-    expected_output=(
-        "Output a list of dictionaries:\n"
-        "{ 'id': 'C1', 'verdict': 'True/False/Partially True/Unclear', "
-        "'corrected_fact': '...', 'sources': [ { 'url': '...', 'excerpt': '...' } ] }"
-    ),
+expected_output = (
+    "Output a list of dictionaries:\n"
+    "[\n"
+    "  { 'id': 'C1', 'claim': 'Original claim text', "
+    "'verdict': 'True/False/Partially True/Unclear', "
+    "'corrected_fact': 'Corrected fact text', "
+    "'sources': [ { 'url': 'https://example.com', 'excerpt': 'Excerpt from the source.' } ] },\n"
+    "  { 'id': 'C2', 'claim': 'Another claim text', "
+    "'verdict': 'True/False/Partially True/Unclear', "
+    "'corrected_fact': 'Corrected fact text', "
+    "'sources': [ { 'url': 'https://example2.com', 'excerpt': 'Another excerpt.' } ] }\n"
+    "]"
+)
+,
     tools=factcheck_tool,  # [SerperDevTool(), ScrapeWebsiteTool()]
     agent=truth_checker_agent,
     context=[search_task]
