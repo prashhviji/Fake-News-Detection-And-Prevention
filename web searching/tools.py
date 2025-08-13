@@ -1,4 +1,4 @@
-from crewai_tools import SeleniumScrapingTool,TavilySearchTool
+from crewai_tools import SeleniumScrapingTool,TavilySearchTool,ScrapeWebsiteTool
 from dotenv import load_dotenv
 load_dotenv()
 import os
@@ -8,3 +8,4 @@ search_tool=TavilySearchTool()
 
 scraper = SeleniumScrapingTool()
 factcheck_tool = [search_tool, scraper]  
+page_scraper=ScrapeWebsiteTool()

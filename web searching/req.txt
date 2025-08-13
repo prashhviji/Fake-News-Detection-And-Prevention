@@ -1,0 +1,5 @@
+crewai
+crewai-tools
+tavily-python
+selenium
+langchain_google_genai
