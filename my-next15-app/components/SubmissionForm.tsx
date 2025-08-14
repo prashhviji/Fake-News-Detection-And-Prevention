@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 
 type Props = {
-  onSubmit: (payload: { type: "text" | "url" | "image" | "video"; text?: string; url?: string; fileName?: string }) => void;
+  onSubmit: (payload: { type: "text" | "url" | "image" | "video"; text?: string; url?: string; file?: File }) => void;
 };
 
 export default function SubmissionForm({ onSubmit }: Props) {
@@ -16,7 +16,7 @@ export default function SubmissionForm({ onSubmit }: Props) {
     if (mode === "text" && text.trim()) onSubmit({ type: "text", text });
     else if (mode === "url" && url.trim()) onSubmit({ type: "url", url });
     else if ((mode === "image" || mode === "video") && fileInputRef.current?.files?.[0]) {
-      onSubmit({ type: mode, fileName: fileInputRef.current.files[0].name });
+      onSubmit({ type: mode, file: fileInputRef.current.files[0] });
     }
   }
 
