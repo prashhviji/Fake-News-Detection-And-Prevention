@@ -42,41 +42,6 @@ page_split_task = Task(
     context=[scrape_task]
 )
 
-prioritize_claims_task = Task(
-    description=(
-        "INPUT: List of atomic claims from page_split_task.\n"
-        "TASK: Analyze each claim and assign a priority. "
-        "High-priority claims include numerical/statistical data, recent events, political statements, "
-        "or any claim likely to impact public perception. "
-        "Low-priority claims are generic, obvious, redundant, or irrelevant. "
-        "Output only the high-priority claims for downstream processing."
-    ),
-    agent=claim_prioritizer_agent,
-    expected_output=(
-        "Output a list of claim objects (same format as page_split_task) "
-        "filtered to only high-priority claims.\n"
-        "Example:\n"
-        "[ { 'id': 'C2', 'text': 'The GDP of France grew 3.4% in 2023.', "
-        "'source_paragraph': 2, 'source_line': 7 }, ... ]"
-    ),
-    context=[page_split_task]
-)
-group_claims_task = Task(
-    description=(
-        "INPUT: List of high-priority claims from prioritize_claims_task.\n"
-        "TASK: Group related claims into small batches for efficient fact-checking. "
-        "Each batch should contain claims about the same event, topic, or dataset. "
-        "Maintain claim order and ensure batch sizes are manageable for the Truth Checker."
-    ),
-    agent=claim_grouper_agent,
-    expected_output=(
-        "Output a list of batches, each batch containing 2–5 related claim objects.\n"
-        "Example:\n"
-        "[ [ { 'id': 'C2', 'text': 'Claim text 1', ... }, { 'id': 'C3', 'text': 'Claim text 2', ... } ], ... ]"
-    ),
-    context=[prioritize_claims_task]
-)
-
 normalize_task = Task(
     description=(
         "INPUT: List of claim objects from page_split_task.\n"
@@ -98,22 +63,41 @@ normalize_task = Task(
     context=[page_split_task]
 )
 
-search_task = Task(
+prioritize_claims_task = Task(
     description=(
-        "INPUT: List of normalized claim objects from normalize_task.\n"
-        "TASK: For each claim, search the web using reputable sources "
-        "(government websites, scientific publications, respected news outlets, official data portals). "
-        "Collect 2-3 relevant and credible sources per claim with exact excerpts matching or contradicting the claim."
+        "INPUT: List of atomic claims from page_split_task.\n"
+        "TASK: Analyze each claim and assign a priority. "
+        "High-priority claims include numerical/statistical data, recent events, political statements, "
+        "or any claim likely to impact public perception. "
+        "Low-priority claims are generic, obvious, redundant, or irrelevant. "
+        "Output only the high-priority claims for downstream processing."
     ),
+    agent=claim_prioritizer_agent,
     expected_output=(
-        "Output a list of dictionaries, each with:\n"
-        "{ 'id': 'C1', 'sources': [ { 'url': '...', 'excerpt': '...' }, ... ] }\n"
-        "Ensure all excerpts are directly relevant to the claim."
+        "Output a list of claim objects (same format as page_split_task) "
+        "filtered to only high-priority claims.\n"
+        "Example:\n"
+        "[ { 'id': 'C2', 'text': 'The GDP of France grew 3.4% in 2023.', "
+        "'source_paragraph': 2, 'source_line': 7 }, ... ]"
     ),
-    tools=[search_tool],  # SerperDevTool or DuckDuckGoSearchTool
-    agent=scraper_agent,
-    context=[normalize_task] 
+    context=[normalize_task ]
 )
+group_claims_task = Task(
+    description=(
+        "INPUT: List of high-priority claims from prioritize_claims_task.\n"
+        "TASK: Group related claims into small batches for efficient fact-checking. "
+        "Each batch should contain claims about the same event, topic, or dataset. "
+        "Maintain claim order and ensure batch sizes are manageable for the Truth Checker."
+    ),
+    agent=claim_grouper_agent,
+    expected_output=(
+        "Output a list of batches, each batch containing 2–5 related claim objects.\n"
+        "Example:\n"
+        "[ [ { 'id': 'C2', 'text': 'Claim text 1', ... }, { 'id': 'C3', 'text': 'Claim text 2', ... } ], ... ]"
+    ),
+    context=[prioritize_claims_task]
+)
+
 precheck_claims_task = Task(
     description=(
         "INPUT: List of claim batches from group_claims_task.\n"
@@ -133,6 +117,23 @@ precheck_claims_task = Task(
         "{ 'batch_id': 'B2', 'status': 'unclear', 'claims': [ ... ] } ]"
     ),
     context=[group_claims_task]
+)
+
+search_task = Task(
+    description=(
+        "INPUT: List of normalized claim objects from normalize_task.\n"
+        "TASK: excluding the original source URL (claim['source_url']). Validate claims without using original source URL For each claim, search the web using reputable sources "
+        "(government websites, scientific publications, respected news outlets, official data portals). "
+        "Collect 2-3 relevant and credible sources per claim with exact excerpts matching or contradicting the claim."
+    ),
+    expected_output=(
+        " Output claims verdicts with external sources and a  list of dictionaries, each with:\n"
+        "{ 'id': 'C1', 'sources': [ { 'url': '...', 'excerpt': '...' }, ... ] }\n"
+        "Ensure all excerpts are directly relevant to the claim."
+    ),
+    tools=[search_tool],  # SerperDevTool or DuckDuckGoSearchTool
+    agent=scraper_agent,
+    context=[precheck_claims_task ] 
 )
 
 
