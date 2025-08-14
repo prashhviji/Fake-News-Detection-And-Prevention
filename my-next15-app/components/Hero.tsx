@@ -16,7 +16,7 @@ export default function Hero() {
 
         <h1 className="text-balance text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl md:text-7xl">
           <span className="bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
-            Sociaguard
+            Socioguard
           </span>
         </h1>
         <p className="mt-4 max-w-2xl text-pretty text-sm/6 text-white/80 sm:mt-5 sm:text-base md:text-lg">
