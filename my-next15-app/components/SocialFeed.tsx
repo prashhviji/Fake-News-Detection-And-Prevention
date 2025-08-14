@@ -5,10 +5,11 @@ import { useState } from "react";
 type Post = {
   id: string;
   user: { name: string; handle: string; avatar: string };
-  image: string;
+  image?: string;
   caption: string;
   likes: number;
   time: string;
+  ai?: boolean; // tag if AI-generated
 };
 
 const MOCK_POSTS: Post[] = [
@@ -47,6 +48,20 @@ const MOCK_POSTS: Post[] = [
 ];
 
 export default function SocialFeed() {
+  const [userPosts, setUserPosts] = useState<Post[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = localStorage.getItem("social_posts");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as Post[];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const posts = [...userPosts, ...MOCK_POSTS];
+
   return (
     <section className="bg-black py-16 text-white">
       <div className="mx-auto max-w-6xl px-6">
@@ -58,7 +73,7 @@ export default function SocialFeed() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {MOCK_POSTS.map((p) => (
+          {posts.map((p) => (
             <PostCard key={p.id} post={p} />
           ))}
         </div>
@@ -93,14 +108,21 @@ function PostCard({ post }: { post: Post }) {
         </button>
       </header>
 
-      <div className="relative bg-black" style={{ aspectRatio: 1 }}>
-        <img
-          src={post.image}
-          alt="post"
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      </div>
+      {post.image ? (
+        <div className="relative bg-black" style={{ aspectRatio: 1 }}>
+          {post.ai && (
+            <div className="absolute left-2 top-2 rounded-md bg-red-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+              AI Generated
+            </div>
+          )}
+          <img
+            src={post.image}
+            alt="post"
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : null}
 
       <div className="p-3">
         <div className="mb-2 flex items-center justify-between">

@@ -3,11 +3,11 @@
 import { useRef, useState } from "react";
 
 type Props = {
-  onSubmit: (payload: { type: "text" | "url" | "image" | "video"; text?: string; url?: string; file?: File }) => void;
+  onSubmit: (payload: { type: "text" | "url" | "image" | "video" | "post"; text?: string; url?: string; file?: File }) => void;
 };
 
 export default function SubmissionForm({ onSubmit }: Props) {
-  const [mode, setMode] = useState<"text" | "url" | "image" | "video">("text");
+  const [mode, setMode] = useState<"text" | "url" | "image" | "video" | "post">("text");
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -17,6 +17,8 @@ export default function SubmissionForm({ onSubmit }: Props) {
     else if (mode === "url" && url.trim()) onSubmit({ type: "url", url });
     else if ((mode === "image" || mode === "video") && fileInputRef.current?.files?.[0]) {
       onSubmit({ type: mode, file: fileInputRef.current.files[0] });
+    } else if (mode === "post") {
+      onSubmit({ type: "post", text: text.trim() || undefined, file: fileInputRef.current?.files?.[0] || undefined });
     }
   }
 
@@ -24,7 +26,7 @@ export default function SubmissionForm({ onSubmit }: Props) {
     <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex overflow-hidden rounded-full border border-white/15 bg-white/5 p-1 text-xs">
-          {(["text", "url", "image", "video"] as const).map((m) => (
+          {(["text", "url", "image", "video", "post"] as const).map((m) => (
             <button
               key={m}
               onClick={() => setMode(m)}
@@ -39,11 +41,11 @@ export default function SubmissionForm({ onSubmit }: Props) {
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-        {mode === "text" && (
+        {(mode === "text" || mode === "post") && (
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Paste text to verify..."
+            placeholder={mode === "post" ? "Write a caption or text to accompany your image..." : "Paste text to verify..."}
             className="min-h-[120px] w-full rounded-xl border border-white/10 bg-black/40 px-3 py-3 text-sm text-white placeholder-white/40 outline-none ring-0 focus:border-white/30"
           />
         )}
@@ -57,12 +59,12 @@ export default function SubmissionForm({ onSubmit }: Props) {
           />
         )}
 
-        {(mode === "image" || mode === "video") && (
+        {(mode === "image" || mode === "video" || mode === "post") && (
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               ref={fileInputRef}
               type="file"
-              accept={mode === "image" ? "image/*" : "video/*"}
+              accept={mode === "image" || mode === "post" ? "image/*" : "video/*"}
               className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white file:mr-4 file:rounded-md file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-medium file:text-black hover:file:bg-white/90"
             />
           </div>

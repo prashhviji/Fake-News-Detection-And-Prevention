@@ -8,7 +8,7 @@ import TrendsDashboard from "@/components/TrendsDashboard";
 import HistoryList from "@/components/HistoryList";
 
 type SubmittedPayload = {
-  type: "text" | "url" | "image" | "video";
+  type: "text" | "url" | "image" | "video" | "post";
   text?: string;
   url?: string;
   file?: File;
@@ -73,6 +73,63 @@ export default function VerifySuite() {
   }
 
   async function analyze(payload: SubmittedPayload): Promise<Analysis> {
+    if (payload.type === "post") {
+      // Combined: analyze image (if present) and text (if present), then aggregate verdict
+      let imageVerdict: "Likely True" | "Uncertain" | "Likely False" | null = null;
+      let textVerdict: "Likely True" | "Uncertain" | "Likely False" | null = null;
+      const reasons: string[] = [];
+
+      if (payload.file) {
+        const form = new FormData();
+        form.append("file", payload.file);
+        const res = await fetch("/api/detect-image", { method: "POST", body: form });
+        const data = await res.json().catch(() => ({ error: "Invalid response from image detection" }));
+        if (res.ok) {
+          const score = Math.round(data.score ?? 0);
+          imageVerdict = score >= 70 ? "Likely True" : score >= 45 ? "Uncertain" : "Likely False";
+          const humanProb = typeof data.human_probability === "number" ? data.human_probability : 0;
+          const aiProb = typeof data.ai_probability === "number" ? data.ai_probability : 0;
+          reasons.push(`Image — human score: ${score}/100; human: ${humanProb.toFixed(2)}, AI: ${aiProb.toFixed(2)}.`);
+          if (data.ai_watermark_detected) reasons.push("Image — AI watermark detected.");
+          if (data.c2pa) reasons.push("Image — C2PA metadata found.");
+        } else {
+          reasons.push(`Image analysis error: ${data?.error || data?.detail || "failed"}`);
+        }
+      }
+
+      if (payload.text && payload.text.trim().length >= 300) {
+        const res = await fetch("/api/detect-text", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: payload.text, version: "latest" }),
+        });
+        const data = await res.json().catch(() => ({ error: "Invalid response from text detection" }));
+        if (res.ok) {
+          const score = Math.round(data.score ?? 0);
+          textVerdict = score >= 80 ? "Likely True" : score >= 60 ? "Uncertain" : "Likely False";
+          const humanProb = typeof data.human_probability === "number" ? data.human_probability : 0;
+          const aiProb = typeof data.ai_probability === "number" ? data.ai_probability : 0;
+          reasons.push(`Text — human score: ${score}/100; human: ${humanProb.toFixed(2)}, AI: ${aiProb.toFixed(2)}.`);
+          if (Array.isArray(data.sentences) && data.sentences.length) {
+            const aiSentences = data.sentences.filter((s: any) => (s?.score ?? 0) < 50).length;
+            reasons.push(`Text — ${aiSentences}/${data.sentences.length} sentences flagged as likely AI-generated.`);
+          }
+        } else {
+          reasons.push(`Text analysis error: ${data?.error || data?.detail || "failed"}`);
+        }
+      }
+
+      // Aggregate verdict: if either part is "Likely False" => Likely False; else if any Uncertain => Uncertain; else Likely True
+      const verdict: Analysis["verdict"] =
+        imageVerdict === "Likely False" || textVerdict === "Likely False"
+          ? "Likely False"
+          : imageVerdict === "Uncertain" || textVerdict === "Uncertain"
+          ? "Uncertain"
+          : "Likely True";
+
+      const score = verdict === "Likely False" ? 35 : verdict === "Uncertain" ? 55 : 80;
+      return { score, verdict, reasons, sources: [] };
+    }
     if (payload.type === "image" && payload.file) {
       const form = new FormData();
       form.append("file", payload.file);
@@ -155,6 +212,40 @@ export default function VerifySuite() {
       ].slice(0, 7));
       const el = document.getElementById("results-section");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      // If the submission is image, text, or combined post, offer to post to feed
+      if (payload.type === "image" || payload.type === "text" || payload.type === "post") {
+        const shouldPost = confirm("Post this to the home feed?");
+        if (shouldPost) {
+          const isAI = result.verdict !== "Likely True";
+          async function fileToDataUrl(file: File): Promise<string> {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result || ""));
+              reader.onerror = (e) => reject(e);
+              reader.readAsDataURL(file);
+            });
+          }
+          const imageSrc = (payload.type === "image" || payload.type === "post") && payload.file
+            ? await fileToDataUrl(payload.file)
+            : undefined;
+          const newPost = {
+            id: String(Date.now()),
+            user: { name: "You", handle: "@you", avatar: "/vercel.svg" },
+            image: imageSrc,
+            caption: payload.type === "text" || payload.type === "post" ? (payload.text || "") : `Posted ${payload.file?.name || "image"}`,
+            likes: 0,
+            time: "now",
+            ai: isAI,
+          } as any;
+          try {
+            const raw = localStorage.getItem("social_posts");
+            const arr = raw ? (JSON.parse(raw) as any[]) : [];
+            arr.unshift(newPost);
+            localStorage.setItem("social_posts", JSON.stringify(arr.slice(0, 30)));
+          } catch {}
+        }
+      }
     } catch (e: any) {
       alert(e?.message || "Detection failed");
     }
