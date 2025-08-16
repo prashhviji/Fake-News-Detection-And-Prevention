@@ -16,16 +16,16 @@ crew=Crew(
         
     ],
     tasks=[
-        scrape_task,       # Step 1: scrape content
+        scrape_task,       
         page_split_task, 
                 normalize_task, 
         prioritize_claims_task ,
            group_claims_task ,
-              precheck_claims_task,    # Step 2: split into claims
-            # Step 3: normalize claims
-        search_task,       # Step 4: search credible sources
-        factcheck_task,     # Step 5: fact-check with sources
-       # report_task         # Step 6: compile report
+              precheck_claims_task,    
+            
+        search_task,       
+        factcheck_task,     
+       
     ],
     process=Process.sequential,
     verbose=True
