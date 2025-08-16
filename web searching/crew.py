@@ -13,7 +13,7 @@ crew=Crew(
         precheck_filter_agent,
         scraper_agent,
         truth_checker_agent,
-        #report_assembler_agent
+        
     ],
     tasks=[
         scrape_task,       # Step 1: scrape content
