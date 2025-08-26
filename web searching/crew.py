@@ -12,10 +12,10 @@ crew=Crew(
         precheck_filter_agent,
         scraper_agent,
         truth_checker_agent,
-        #report_assembler_agent
+        
     ],
     tasks=[
-        scrape_task,       # Step 1: scrape content
+        scrape_task,       
         page_split_task, 
                 normalize_task, 
         prioritize_claims_task ,
@@ -23,7 +23,7 @@ crew=Crew(
               precheck_claims_task,    # Step 2: split into claims
             # Step 3: normalize claims
         search_task,       # Step 4: search credible sources
-        factcheck_task    # Step 5: fact-check with sources
+        factcheck_task,     # Step 5: fact-check with sources
        # report_task         # Step 6: compile report
     ],
     process=Process.sequential,
