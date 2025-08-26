@@ -5,7 +5,7 @@ load_dotenv()
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 gllm=LLM(
-    model="gemini/gemini-2.5-flash",
+    model="gemini/gemini-2.0-flash",
     verbose=True,
     temperature=0.5,
     api_key=os.getenv("GOOGLE_API_KEY")
@@ -27,7 +27,7 @@ scraper_agent = Agent(
 
 truth_checker_agent = Agent(
     role='Truth Checker',
-    goal='Analyze the collected news and decide if the claim is true, false, or unclear',
+    goal='Analyze the collected news and decide if the claim is true, false, or unclear.Pay special attention to numerical details and dates. Only return True if all numeric values match exactly.',
     verbose=True,
     memory=False,
     backstory=(

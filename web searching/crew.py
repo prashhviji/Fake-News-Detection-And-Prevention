@@ -9,7 +9,6 @@ crew=Crew(
         fact_normalizer_agent,
         claim_prioritizer_agent,
         claim_grouper_agent ,
-        
         precheck_filter_agent,
         scraper_agent,
         truth_checker_agent,
@@ -24,12 +23,12 @@ crew=Crew(
               precheck_claims_task,    # Step 2: split into claims
             # Step 3: normalize claims
         search_task,       # Step 4: search credible sources
-        factcheck_task,     # Step 5: fact-check with sources
+        factcheck_task    # Step 5: fact-check with sources
        # report_task         # Step 6: compile report
     ],
     process=Process.sequential,
     verbose=True
 )
 
-result=crew.kickoff(inputs={'url':'https://www.thehindu.com/news/national/pm-modi-likely-to-visit-us-for-unga-session-in-september/article69927100.ece'})
+result=crew.kickoff(inputs={'url':'https://www.thehindu.com/news/national/tamil-nadu/burglars-decamp-with-39-sovereigns-of-gold-silver-objects-from-farmers-house-in-ranipet/article69928860.ece'})
 print(result)
